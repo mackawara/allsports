@@ -1,21 +1,25 @@
 import "./App.css";
-import "./components/Wrapper";
-import Wrapper from "./components/Wrapper";
-import "./components/Card";
 import React from "react";
-import "./components/Card";
-import CardTemp from "./components/Card";
+import FixtureCard from "./components/FixtureCard";
 import { Container } from "@mui/material";
-import Typography from "@mui/material/Typography";
 
-const cardContents = {
-  imageAlt: "Test Image",
-  imageSrc: "./images/test.jpg",
-};
+
+
+
 function App() {
+  const [data, setData] = React.useState(null);
+  React.useEffect(() => {
+    fetch("/getScores")
+      .then((res) => res.json())
+      .then((data) => {
+        setData(data.message);
+        console.log(data);
+      });
+  }, []);
+
   return (
     <Container>
-      <Typography variant="H2">Hello</Typography>
+      <FixtureCard></FixtureCard>
     </Container>
   );
 }
