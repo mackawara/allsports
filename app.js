@@ -65,20 +65,8 @@ app.get("/getleagues", async (req, res) => {
   res.send(leagues);
 });
 
-//today=`${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`
 let pageToken, tasks;
 
-/* 
-axios.request(options).then(function (response) {
-  console.log(response)
-	scores=JSON.stringify(response.data.response) 
-  scores.forEach(scores=> { 
-  });
-  console.log(typeof(scores))
-}).catch(function (error) {
-	console.error(error);
-}); 
- */
 var date = moment();
 var currentDate = date.format("YYYY-MM-D");
 
@@ -101,22 +89,7 @@ app.get("/getScores", async (req, res) => {
       console.error(error);
     });
 
-  /* 
-    key details
-    fixture:{
-      TIme in local
-    Status}
-    league:{
-      name
-      season
-    }
-    teams:{
-      home.name
-      away.name
-    }
-    goals:`${home.name} ${goals.home} ${goals.away} ${away.name} 
-    minuutes played :fixture.status.elapsed
-    */
+  
   const fixture = fixtures[2];
   const time = new Date(fixture.fixture.timestamp * 1000).toLocaleTimeString();
   const date = new Date(fixture.fixture.date).toLocaleDateString();
@@ -144,6 +117,9 @@ app.get("/getScores", async (req, res) => {
   sendWhatsapp(263775231426, fixture1);
   res.send({ body: fixture1 });
 });
+app.get("/",(req,res)=>{
+  res.send({body:"Heelo sports"})
+})
 //sendWhatsapp(263775231426,"hesi")
 app.listen(PORT, () => {
   console.log(`Listening on port ${PORT}!`);
