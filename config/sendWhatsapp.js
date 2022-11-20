@@ -19,31 +19,46 @@ const sendWhatsapp = async (number, message) => {
           language: {
             code: "en_US",
           },
-           components: [{
-            type: "header",
-            parameters: [
-              {
-                type: "text",
-                text: message
-              }]},
-             {
+          components: [
+            {
+              type: "header",
+              parameters: [
+                {
+                  type: "text",
+                  text: message.header,
+                },
+              ],
+            },
+            {
               type: "body",
               parameters: [
                 {
                   type: "text",
-                  text: message,
-                },{
-                  type: "text",
-                  text: message,
-                }, {
-                  type: "text",
-                  text: message,
+                  text: message.fixture,
                 },
-                
+                {
+                  type: "text",
+                  text: message.date,
+                },
+                {
+                  type: "text",
+                  text: message.time,
+                },
+                {
+                  type: "text",
+                  text: message.venue,
+                },
+                {
+                  type: "text",
+                  text:
+                    message.matchStatus.long == "Not Started"
+                      ? "Match yet to Begin"
+                      : message.matchStatus.long == "Match Finished"
+                      ? `Match Finished  *${message.score}*`
+                      : `In progress: *${message.score}**,  ${message.matchStatus.elapsed} minutes played`,
+                },
               ],
-              
-             },
-            
+            },
           ],
         },
       },
@@ -52,7 +67,7 @@ const sendWhatsapp = async (number, message) => {
       return "Booking was saved , confirmation was also sent to your email";
     });
   } catch (error) {
-    console.log(error);
+    console.log(error.data);
     console.log(`Thre was an error on the server please try again `);
   }
 };

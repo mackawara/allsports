@@ -24,7 +24,7 @@ const rapidApiKey = process.env.X_RAPID_API_KEY;
 const options = {
   method: "GET",
   url: "https://api-football-v1.p.rapidapi.com/v3/fixtures",
-  params: { league: "1", season: "2022", round: "Group Stage - 1" },
+  params: { league: "208", season: "2022", round: "Regular Season - 17" },
   headers: {
     "X-RapidAPI-Key": rapidApiKey,
     "X-RapidAPI-Host": "api-football-v1.p.rapidapi.com",
@@ -117,7 +117,7 @@ app.get("/getScores", async (req, res) => {
     goals:`${home.name} ${goals.home} ${goals.away} ${away.name} 
     minuutes played :fixture.status.elapsed
     */
-  const fixture = fixtures[0];
+  const fixture = fixtures[2];
   const time = new Date(fixture.fixture.timestamp * 1000).toLocaleTimeString();
   const date = new Date(fixture.fixture.date).toLocaleDateString();
   const venue = fixture.fixture.venue.name;
@@ -125,27 +125,24 @@ app.get("/getScores", async (req, res) => {
   const away = fixture.teams.away.name;
   const competition = `${fixture.league.name} ${fixture.league.season}`;
   const goals = fixture.goals;
-  const matchStatus = fixture.fixture.status.long;
-  const scores = `${home} vs ${away}`;
+  const matchStatus = fixture.fixture.status;
+  console.log(matchStatus);
+  const scores = `${home} ${goals.home} vs ${goals.away} ${away}`;
   console.log(scores);
   const fixture1 = {
-    Competition: competition, //`${fixture.league.name} ${fixture.league.season}`,
-    venue: venue, //fixture.fixture.venue.name,
-    matchStatus: matchStatus, //fixture.fixture.status.long,
-    time: time, //new Date(fixture.fixture.timestamp * 1000).toLocaleTimeString(),
-    home: home, ///fixture.teams.home.name,
-    away: away,
-    scores: scores, //fixture.teams.away.name,
+    header: competition,
+    matchStatus: matchStatus,
+    fixture: `${home} vs ${away}`,
+    venue: venue,
     date: date,
-    message: ``,
-    homeLogo: fixture.teams.home.logo,
+    time: time,
+    score: scores,
     // score:fixture.score.fulltime
   };
-  const messageBody = `${competition} \n${date} ${time} \n${scores} \n${venue}`;
-  console.log(messageBody);
-  
+  //const messageBody = `${competition} \n${date} ${time} \n${scores} \n${venue}`;
+
+  sendWhatsapp(263775231426, fixture1);
   res.send({ body: fixture1 });
-  
 });
 //sendWhatsapp(263775231426,"hesi")
 app.listen(PORT, () => {
