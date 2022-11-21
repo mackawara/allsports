@@ -132,6 +132,7 @@ app.get("/getScores", async (req, res) => {
     const time = new Date(
       fixture.fixture.timestamp * 1000
     ).toLocaleTimeString();
+    const fixtureID=fixture.fixture.id
     const date = new Date(fixture.fixture.date).toLocaleDateString();
     const venue = fixture.fixture.venue.name;
     const home = fixture.teams.home.name;
