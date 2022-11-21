@@ -54,7 +54,7 @@ const sendWhatsapp = async (number, message) => {
                     message.matchStatus.long == "Not Started"
                       ? "Match yet to Begin"
                       : message.matchStatus.long == "Match Finished"
-                      ? `Match Finished  *${message.score}*`
+                      ? `Match Finished + *${message.score}*`
                       : `In progress: *${message.score}**,  ${message.matchStatus.elapsed} minutes played`,
                 },
               ],
