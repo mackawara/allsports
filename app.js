@@ -12,6 +12,8 @@ const allSportsPageID = process.env.ALLSPORTS_PAGE_ID;
 const pageID = process.env.ALLSPORTS_ID;
 const connectDB = require("./config/database");
 
+const sendReply=require("./config/sendReply")
+
 var date = moment();
 var currentDate = date.format("YYYY-MM-D");
 
@@ -32,6 +34,7 @@ const options = {
     season: "2022",
     round: "Group Stage - 1",
     date: currentDate,
+    timezone: "Africa/Harare",
   },
   headers: {
     "X-RapidAPI-Key": rapidApiKey,
@@ -75,12 +78,14 @@ app.get("/getleagues", async (req, res) => {
 
 let pageToken, tasks;
 
+app.post("/watsapp",(req,res)=>{
+  console.log("watsapp hit")
+})
 /* Verfiy Whatsapp to receive messages */
 app.get("/watsapp", (req, res) => {
   console.log(req.body);
-  /**
-   * UPDATE YOUR VERIFY TOKEN
-   *This will be the Verify Token value when you set up webhook
+  /* UPDATE YOUR VERIFY TOKEN
+  This will be the Verify Token value when you set up webhook TO RECIEVE MESSAGEES ON THE NUMBER
    **/
   const verify_token = process.env.WHATSAPP_VERIFY_TOKEN;
 
@@ -93,7 +98,6 @@ app.get("/watsapp", (req, res) => {
   if (mode && token) {
     // Check the mode and token sent are correct
     if (mode === "subscribe" && token === verify_token) {
-     
       console.log("WEBHOOK_VERIFIED");
       res.status(200).send(challenge);
     } else {
@@ -101,6 +105,7 @@ app.get("/watsapp", (req, res) => {
     }
   }
 });
+
 
 
 app.get("/api", (req, res) => {
@@ -112,9 +117,9 @@ app.get("/getScores", async (req, res) => {
   const fixtures = await axios
     .request(options)
     .then((response) => {
-     // console.log(response.data);
+      // console.log(response.data);
       data = response.data;
-     // console.log(data.response);
+      // console.log(data.response);
       return data.response;
     })
     .catch(function (error) {
@@ -122,32 +127,34 @@ app.get("/getScores", async (req, res) => {
     });
 
   const fixture = fixtures[0];
-fixtures.forEach((fixture) => {
-  console.log(fixture)
-  const time = new Date(fixture.fixture.timestamp * 1000).toLocaleTimeString();
-  const date = new Date(fixture.fixture.date).toLocaleDateString();
-  const venue = fixture.fixture.venue.name;
-  const home = fixture.teams.home.name;
-  const away = fixture.teams.away.name;
-  const competition = `${fixture.league.name} ${fixture.league.season}`;
-  const goals = fixture.goals;
-  const matchStatus = fixture.fixture.status;
-  const scores = `${home} ${goals.home} vs ${goals.away} ${away}`;
-  const messageObj = {
-    header: competition,
-    matchStatus: matchStatus,
-    fixture: `${home} vs ${away}`,
-    venue: venue,
-    date: date,
-    time: time,
-    score: scores,
-    // score:fixture.score.fulltime
-  };
-  //const messageBody = `${competition} \n${date} ${time} \n${scores} \n${venue}`;
+  fixtures.forEach((fixture) => {
+    console.log(fixture);
+    const time = new Date(
+      fixture.fixture.timestamp * 1000
+    ).toLocaleTimeString();
+    const date = new Date(fixture.fixture.date).toLocaleDateString();
+    const venue = fixture.fixture.venue.name;
+    const home = fixture.teams.home.name;
+    const away = fixture.teams.away.name;
+    const competition = `${fixture.league.name} ${fixture.league.season}`;
+    const goals = fixture.goals;
+    const matchStatus = fixture.fixture.status;
+    const scores = `${home} ${goals.home} vs ${goals.away} ${away}`;
+    const messageObj = {
+      header: competition,
+      matchStatus: matchStatus,
+      fixture: `${home} vs ${away}`,
+      venue: venue,
+      date: date,
+      time: time,
+      score: scores,
+      // score:fixture.score.fulltime
+    };
+    //const messageBody = `${competition} \n${date} ${time} \n${scores} \n${venue}`;
 
-  sendWhatsapp(263775231426, messageObj);
+    sendWhatsapp(263775231426, messageObj);
   });
-  
+
   res.send({ body: "tes 1 2" });
 });
 app.get("/", (req, res) => {
