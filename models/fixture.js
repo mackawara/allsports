@@ -41,8 +41,9 @@ const fixtureSchema = new mongoose.Schema({
 
 const fixtureModel = mongoose.model("fixture", fixtureSchema);
 
-const saveFixture=async((req,res,next)=>{
+module.exports=fixtureModel
+/* const saveFixture=async((req,res,next)=>{
 const fixture=new fixtureModel({
-    
+
 })
-})
+}) */

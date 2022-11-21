@@ -2,12 +2,37 @@ const express = require("express");
 const bodyParser = require("body-parser");
 const app = express();
 const moment = require("moment");
+const cron=require("node-cron")
 //const routes = require('./routes');
 require("dotenv").config();
 
 app.use(bodyParser.json());
 app.use(express.static(`${__dirname}/public`));
 /* All sports  */
+
+//Database connection
+const mongoose = require("mongoose");
+
+
+const databaseName = "fixtures";
+const optionDB = {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+  dbname: databaseName,
+};
+const uri = process.env.DB_STRING;
+try {
+  let connection = mongoose.connect(uri, optionDB);
+  const database = mongoose.connection;
+
+  database.on("error", console.error.bind(console, "There was an error:"));
+  database.once("open", function () {
+    console.log(`DAtabase connection established`);
+  });
+} catch (error) {
+  console.log(" database could not be connected");
+}
+
 const allSportsPageID = process.env.ALLSPORTS_PAGE_ID;
 const pageID = process.env.ALLSPORTS_ID;
 const connectDB = require("./config/database");
