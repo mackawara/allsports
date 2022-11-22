@@ -12,30 +12,12 @@ app.use(express.static(`${__dirname}/public`));
 
 //Database connection
 const mongoose = require("mongoose");
+const connectDB = require("./config/database");
+connectDB()
 
-
-const databaseName = "fixtures";
-const optionDB = {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-  dbname: databaseName,
-};
-const uri = process.env.DB_STRING;
-try {
-  let connection = mongoose.connect(uri, optionDB);
-  const database = mongoose.connection;
-
-  database.on("error", console.error.bind(console, "There was an error:"));
-  database.once("open", function () {
-    console.log(`DAtabase connection established`);
-  });
-} catch (error) {
-  console.log(" database could not be connected");
-}
 
 const allSportsPageID = process.env.ALLSPORTS_PAGE_ID;
 const pageID = process.env.ALLSPORTS_ID;
-const connectDB = require("./config/database");
 
 const sendReply=require("./config/sendReply")
 
@@ -45,7 +27,6 @@ var currentDate = date.format("YYYY-MM-D");
 //routes(app);
 const PORT = process.env.PORT || 3001;
 
-module.exports = connectDB;
 const sendWhatsapp = require("./config/sendWhatsapp");
 
 const axios = require("axios");
@@ -68,14 +49,6 @@ const options = {
   /* params: { live: "all", league: "39" }, */
 };
 
-//"https://graph.facebook.com/{your-user-id}/accounts?access_token={user-access-token}
-const options2 = {
-  method: "get",
-  url:
-    "https://graph.facebook.com/" +
-    5632068726880896 +
-    "/accounts?access_token=EAAJwHbsiZA7sBAOs1qrpPmDZB0GdyeMyXJEVVYVe4ZCpQYdCINq30NzmGSIqBt7OZAkg09CqplOWKnXwxxI9abBR8iXI7jOMjN3gM6J6LMPmZCUTowUN0vgpvIjWLnWc6Wyv9EqSEzlzm3BAZCt4bZBohVNebljKpKH9vEb6IFFSxErSbUGpvJXMwbXyaIByZCuIH7dZCYTHSVZCKlZBPeqvzvP2FBO3mTaOzuOr2JnHsfdaq0ZAvOgJFGxcWfQkQEdXhwEZD",
-};
 const optionsGetLeague = {
   method: "GET",
   url: "https://api-football-v1.p.rapidapi.com/v3/leagues",
@@ -101,7 +74,6 @@ app.get("/getleagues", async (req, res) => {
   res.send(leagues);
 });
 
-let pageToken, tasks;
 
 app.post("/watsapp",(req,res)=>{
   console.log("watsapp hit")
@@ -151,7 +123,6 @@ app.get("/getScores", async (req, res) => {
       console.error(error);
     });
 
-  const fixture = fixtures[0];
   fixtures.forEach((fixture) => {
     console.log(fixture);
     const time = new Date(
