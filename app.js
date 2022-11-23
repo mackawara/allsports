@@ -13,7 +13,7 @@ app.use(express.static(`${__dirname}/public`));
 //Database connection
 const mongoose = require("mongoose");
 const connectDB = require("./config/database");
-connectDB()
+connectDB()// runs the code that connects to the databse
 
 
 const allSportsPageID = process.env.ALLSPORTS_PAGE_ID;
