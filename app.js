@@ -2,7 +2,7 @@ const express = require("express");
 const bodyParser = require("body-parser");
 const app = express();
 const moment = require("moment");
-const cron=require("node-cron")
+const cron = require("node-cron");
 //const routes = require('./routes');
 require("dotenv").config();
 
@@ -13,21 +13,26 @@ app.use(express.static(`${__dirname}/public`));
 //Database connection
 const mongoose = require("mongoose");
 const connectDB = require("./config/database");
-connectDB()// runs the code that connects to the databse
+connectDB(); // runs the code that connects to the databse
 
+const searchDb=require("./controllers/searchDB")
 
 const allSportsPageID = process.env.ALLSPORTS_PAGE_ID;
 const pageID = process.env.ALLSPORTS_ID;
 
-const sendReply=require("./config/sendReply")
+const sendReply = require("./config/sendReply");
+const messageWa=require("./config/messageWa")
+messageWa(263775231426,"text")
 
 var date = moment();
 var currentDate = date.format("YYYY-MM-D");
 
 //routes(app);
 const PORT = process.env.PORT || 3001;
-
+/* Exernal Functions */
 const sendWhatsapp = require("./config/sendWhatsapp");
+const callFootballApi = require("./config/callFootballApi");
+const getFixtures = require("./controllers/getFixtures");
 
 const axios = require("axios");
 
@@ -74,10 +79,55 @@ app.get("/getleagues", async (req, res) => {
   res.send(leagues);
 });
 
-
-app.post("/watsapp",(req,res)=>{
-  console.log("watsapp hit")
+/* Cron jobs */
+cron.schedule(
+  " */45 * * * * *",
+  () => {
+    console.log(searchDb(263775231426,clientNumberModel))
+    //callFootballApi();
+    console.log("cron running");
+  },
+  { scheduled: true, timezone: "UTC" }
+);
+/* Routes */
+const clientNumberModel=require("./models/clientNumber")
+const myNumber= new clientNumberModel({
+  number:"263775231426",date:"04/12/22"
 })
+myNumber.save().then(()=>console.log("personal number saved"))
+
+
+app.post("/watsapp", (req, res) => {
+  console.log("watsapp hit");
+  let body = req.body;
+  let from = req.body.entry[0].changes[0].value.messages[0].from;
+
+  // Check the Incoming webhook message
+  console.log(JSON.stringify(req.body, null, 2));
+
+  // info on WhatsApp text message payload: https://developers.facebook.com/docs/whatsapp/cloud-api/webhooks/payload-examples#text-messages
+  if (req.body.object) {
+    if (
+      req.body.entry &&
+      req.body.entry[0].changes &&
+      req.body.entry[0].changes[0] &&
+      req.body.entry[0].changes[0].value.messages &&
+      req.body.entry[0].changes[0].value.messages[0]
+    ) {
+      console.log(req.body.object);
+      let phone_number_id =
+        req.body.entry[0].changes[0].value.metadata.phone_number_id;
+     // extract the phone number from the webhook payload
+      let msg_body = req.body.entry[0].changes[0].value.messages[0].text.body;
+    }
+
+
+  }
+  console.log(searchDb(from,clientNumberModel))
+
+  const fixtures=getFixtures(msg_body)
+  
+});
 /* Verfiy Whatsapp to receive messages */
 app.get("/watsapp", (req, res) => {
   console.log(req.body);
@@ -103,8 +153,6 @@ app.get("/watsapp", (req, res) => {
   }
 });
 
-
-
 app.get("/api", (req, res) => {
   console.log("pinged by react");
   res.json({ message: "Hello from server!" });
@@ -128,7 +176,7 @@ app.get("/getScores", async (req, res) => {
     const time = new Date(
       fixture.fixture.timestamp * 1000
     ).toLocaleTimeString();
-    const fixtureID=fixture.fixture.id
+    const fixtureID = fixture.fixture.id;
     const date = new Date(fixture.fixture.date).toLocaleDateString();
     const venue = fixture.fixture.venue.name;
     const home = fixture.teams.home.name;
