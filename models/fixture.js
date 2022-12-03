@@ -21,19 +21,16 @@ const fixtureSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  goals: {
-    type: String,
-    required: true,
-  },
+
   matchStatus: {
     type: String,
     required: true,
   },
-  scores: {
+  score: {
     type: String,
     required: true,
   },
-  fixtureId: {
+  fixtureID: {
     type: String,
     required: true,
   },
@@ -42,8 +39,3 @@ const fixtureSchema = new mongoose.Schema({
 const fixtureModel = mongoose.model("fixture", fixtureSchema);
 
 module.exports=fixtureModel
-/* const saveFixture=async((req,res,next)=>{
-const fixture=new fixtureModel({
-
-})
-}) */
