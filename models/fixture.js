@@ -34,6 +34,10 @@ const fixtureSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  time: {
+    type: String,
+    required: true,
+  },
 });
 
 const fixtureModel = mongoose.model("fixture", fixtureSchema);
