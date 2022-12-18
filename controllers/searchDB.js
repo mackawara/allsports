@@ -1,17 +1,12 @@
-const searchDb = async function (queryParam, model) {
-    console.log(`query DB is working`);
-    const result = await model
-      .find({
-        queryParam: queryParam,
-      })
-      .exec();
-    console.log(result);
-  
-    if (result.length < 1) {
-      return false;
-    } else {
-      return true;
-    }
-  };
-  module.exports=searchDb
-  
+const searchDb = async function (queryKey,queryParam, model) {
+ 
+  const result = await model
+    .find({
+      [queryKey]: queryParam,
+    })
+    .exec();
+//console.log("The resultis "+ result)
+  return result.length > 0 ? true : false;
+};
+
+module.exports = searchDb;
