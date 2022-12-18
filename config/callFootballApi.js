@@ -1,20 +1,19 @@
 const axios = require("axios");
 const rapidApiKey = process.env.X_RAPID_API_KEY;
 const fixtureModel = require("../models/fixture");
-const moment = require("moment");
 var todayDate = new Date().toISOString().slice(0, 10);
 
 /* only queries fixutres and scores for current */
 
 const callFootballApi = async () => {
-  console.log("call foor ball")
+  console.log("call football");
   const options = {
     method: "GET",
     url: `https://api-football-v1.p.rapidapi.com/v3/fixtures`,
     params: {
       league: "1",
       season: "2022",
-      date: "2022-12-10",
+      date: todayDate,
       timezone: "Africa/Harare",
     },
     headers: {
@@ -23,27 +22,42 @@ const callFootballApi = async () => {
     },
   };
 
-  const matchStatusFormatter = (matchStatus) => {
-    if (
-      matchStatus.long == "Not Started" ||
-      matchStatus.short == "FT"
-    ) {
+  const matchStatusFormatter = (matchStatus, penalty, winner) => {
+    //check if the match is finished or hasnt started
+    const inProgress = /1H|2H|HT|ET/;
+    const matchFinishedNotStarted = /FT|NS/;
+    const afterEtPen = /AET|PEN/;
+    if (matchFinishedNotStarted.test(matchStatus.short)) {
       return matchStatus.long;
+    } else if (inProgress.test(matchStatus.short)) {
+      return `In progress,${matchStatus.long}, ${matchStatus.elapsed} minutes played`;
+    } else if (afterEtPen.test(matchStatus.short)) {
+      let winningScore =
+        penalty.home > penalty.away ? penalty.home : penalty.away;
+      let losingScore =
+        penalty.home < penalty.away ? penalty.home : penalty.away;
+
+      return `${matchStatus.long} *${winner} won ${winningScore}-${losingScore}*`;
+    }
+  };
+  const scoreFormatter = (score, matchStatus,home,away) => {
+    if (matchStatus == "Match Finished") {
+      return `Full time ${score}`;
+    } else if (matchStatus == "Not Started") {
+      return `${home} vs ${away}`;
     } else {
-      return `${matchStatus.elapsed} minutes played`;
+      return score;
     }
   };
   const results = await axios
     .request(options)
     .then((response) => {
-      //console.log(response);
       return response.data.response;
-      //return data;
     })
     .catch(function (error) {
       console.error(error);
     });
-  console.log(results[0].fixture.status)
+
   try {
     results.forEach(async (result) => {
       const time = new Date(
@@ -55,14 +69,23 @@ const callFootballApi = async () => {
       const away = result.teams.away.name;
       const competition = `${result.league.name} ${result.league.season}`;
       const goals = result.goals;
-      const matchStatus = matchStatusFormatter(result.fixture.status);
-      const score = `${home} ${result.goals.home} vs ${result.goals.away} ${away}`;
+      const winner = result.teams.home.winner ? home : away;
+      const round = result.league.round;
+      console.log(result.fixture.status);
+      const matchStatus = matchStatusFormatter(
+        result.fixture.status,
+        result.score.penalty,
+        winner
+      );
+      const penalties = result.score.penalty;
+      const scores = ` ${home} ${result.goals.home} vs ${result.goals.away} ${away}`;
+      const score = scoreFormatter(scores, matchStatus.long,home,away);
 
       const fixture = new fixtureModel({
-        // header: competition,
         matchStatus: matchStatus,
         fixture: `${home} vs ${away}`,
         venue: venue,
+        round: round,
         date: todayDate,
         home: home,
         away: away,
@@ -71,7 +94,8 @@ const callFootballApi = async () => {
         fixtureID: fixtureID,
         competition: competition,
       });
-
+      //Save the api response to DB
+      //check if the fixture is all int he DB and update otherwise create new fixture
       const queryAndSave = async function () {
         const result = await fixtureModel
           .find({
@@ -80,25 +104,19 @@ const callFootballApi = async () => {
           .exec();
 
         if (result.length < 1) {
-          console.log(" not found");
           fixture.save().then(() => console.log("now saved"));
         } else {
-          console.log("fixture  ofound now updatung");
-        fixtureModel.findOneAndUpdate({fixtureID:fixtureID},{matchStatus:matchStatus,score:score},(error,data)=>{
-          if (error){
-            console.log(error)
-          }
-          else{
-            console.log(data)
-          }
-        })
-
-          // fixture.updateOne ({ score: "testing" }).then(()=>console.log("updated"));
-          // fixture.save()
-          /* fixtureModel.updateOne(
+          fixtureModel.findOneAndUpdate(
             { fixtureID: fixtureID },
-            { matchStatus: matchStatus, score: score, time: time }
-          ); */
+            { matchStatus: matchStatus, score: score, round: round },
+            (error, data) => {
+              if (error) {
+                console.log(error);
+              } else {
+                console.log(data);
+              }
+            }
+          );
         }
       };
       queryAndSave();

@@ -26,6 +26,10 @@ const fixtureSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  round: {
+    type: String,
+    required: true,
+  },
   score: {
     type: String,
     required: true,

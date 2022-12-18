@@ -9,6 +9,7 @@ require("dotenv").config();
 //Database connection
 const mongoose = require("mongoose");
 const connectDB = require("./config/database");
+const { stringify } = require("querystring");
 connectDB().then(async () => {
   app.use(bodyParser.json());
   app.use(express.static(`${__dirname}/public`));
@@ -18,9 +19,6 @@ connectDB().then(async () => {
 
   const allSportsPageID = process.env.ALLSPORTS_PAGE_ID;
   const pageID = process.env.ALLSPORTS_ID;
-
-  const sendReply = require("./config/sendReply");
-  const messageWa = require("./config/messageWa");
 
   var date = moment();
   var currentDate = date.format("YYYY-MM-D");
@@ -60,14 +58,13 @@ connectDB().then(async () => {
       "X-RapidAPI-Key": rapidApiKey,
       "X-RapidAPI-Host": "api-football-v1.p.rapidapi.com",
     },
-    /* params: { live: "all", league: "39" }, */
   };
   app.get("/getleagues", async (req, res) => {
     const leagues = await axios
       .request(optionsGetLeague)
       .then((response) => {
         data = response.data;
-        // console.log(data.response);
+
         return data.response;
       })
       .catch(function (error) {
@@ -80,28 +77,35 @@ connectDB().then(async () => {
   /* Cron jobs */
 
   const fixtureModel = require("./models/fixture");
-  /* fixtureModel.deleteMany({
-        competition: "World Cup 2022",
-  }).then((result)=>{console.log(result)
 
-  }) */
   var todayDate = new Date().toISOString().slice(0, 10);
+
   cron.schedule(
     " */6 * * * *",
     async () => {
-      callFootballApi();
+      await callFootballApi();
+      const optedInClients = await clientNumberModel
+        .find({ optedIn: true })
+        .exec();
+      console.log(optedInClients[0].number);
+
       const result = await fixtureModel
         .find({
           date: todayDate,
         })
-        .exec();
-      console.log("result = " + result);
+        .exec()
+        .catch((error) => console.log(error));
 
-      result.forEach((fixture)=>{
-    sendWhatsapp("263775231426",fixture)
-    }) 
-      // console.log(searchDb(263775231426,clientNumberModel))
-      //callFootballApi();
+      result.forEach((fixture) => {
+        if (fixture.matchStatus.includes("Not Started")) {
+          optedInClients.forEach((client) => {
+            const number = client.number;
+            sendWhatsapp(number, fixture);
+          });
+        } else {
+          console.log("no match in progress");
+        }
+      });
       console.log("cron running");
     },
     { scheduled: true, timezone: "UTC" }
@@ -112,18 +116,13 @@ connectDB().then(async () => {
     number: "263775231426",
     date: "04/12/22",
   });
-  //searchDb("263775231426",clientNumberModel)?myNumber.save().then(()=>console.log("personal number saved")):console.log("already in system")
+  const MessageIdModel = require("./models/webhook");
 
-  app.post("/watsapp", (req, res) => {
-    console.log("watsapp hit");
-    let body = req.body;
-    let from = req.body.entry[0].changes[0].value.messages[0].from;
-
-    // Check the Incoming webhook message
-    console.log(JSON.stringify(req.body, null, 2));
-
-    // info on WhatsApp text message payload: https://developers.facebook.com/docs/whatsapp/cloud-api/webhooks/payload-examples#text-messages
+  app.post("/watsapp", async (req, res) => {
+    console.log("top hit");
+    //console.log(JSON.stringify(req.body, null, 2));
     if (req.body.object) {
+      //check if the pyload has all the fields required
       if (
         req.body.entry &&
         req.body.entry[0].changes &&
@@ -131,19 +130,65 @@ connectDB().then(async () => {
         req.body.entry[0].changes[0].value.messages &&
         req.body.entry[0].changes[0].value.messages[0]
       ) {
-        console.log(req.body.object);
-        let phone_number_id =
-          req.body.entry[0].changes[0].value.metadata.phone_number_id;
-        // extract the phone number from the webhook payload
-        let msg_body = req.body.entry[0].changes[0].value.messages[0].text.body;
-      }
-    }
-    console.log(searchDb(from, clientNumberModel));
+        const messageId = req.body.entry[0].changes[0].value.messages[0].id;
 
-    const fixtures = getFixtures(msg_body);
+        if ((await searchDb("messageId", messageId, MessageIdModel)) == false) {
+          console.log("MESAGE NOT Handled yet");
+
+          await MessageIdModel.create({
+            date: todayDate,
+            messageId: messageId,
+          }).catch((err) => console.log(err));
+          console.log("processing message");
+
+          let msg_body =
+            req.body.entry[0].changes[0].value.messages[0].text.body;
+          let from = req.body.entry[0].changes[0].value.messages[0].from;
+          let phone_number_id =
+            req.body.entry[0].changes[0].value.metadata.phone_number_id;
+          const stop = new RegExp("stop", "i");
+          const start = new RegExp("start", "i");
+          if (!(await searchDb("number", from, clientNumberModel))) {
+            //check if the number is existing and if not save it .
+            console.log("number not found");
+            const newNumber = new clientNumberModel({
+              number: from,
+              optedIn: true,
+              date: todayDate,
+              phone_number_id: phone_number_id,
+              preference: "football",
+            });
+            newNumber.save();
+          } else {
+            // if the number is present check if any of the opt in or opt out key words
+            if (start.test(msg_body)) {
+              console.log("message with start");
+              let number = await clientNumberModel
+                .find({ number: from })
+                .exec();
+              console.log(number[0]);
+              number[0].optedIn = true;
+
+              await number[0].save().then((data) => console.log(data));
+            } else if (stop.test(msg_body)) {
+              let number = await clientNumberModel.findOne({ number: from });
+              number.optedIn = false;
+              await number.save().then((data) => console.log(data));
+            } else {
+            }
+          }
+
+          //}
+          res.sendStatus(200).end();
+        } else {
+          res.sendStatus(404);
+        }
+      }
+    } else return;
   });
   /* Verfiy Whatsapp to receive messages */
   app.get("/watsapp", (req, res) => {
+    console.log("whatsapp get hit");
     console.log(req.body);
     /* UPDATE YOUR VERIFY TOKEN
     This will be the Verify Token value when you set up webhook TO RECIEVE MESSAGEES ON THE NUMBER
@@ -171,7 +216,7 @@ connectDB().then(async () => {
     console.log("pinged by react");
     res.json({ message: "Hello from server!" });
   });
-  callFootballApi();
+
   app.get("/getScores", async (req, res) => {
     console.log("get scores pinged");
     const fixtures = await axios
@@ -221,7 +266,6 @@ connectDB().then(async () => {
   app.get("/", (req, res) => {
     res.send({ body: "Heelo sports" });
   });
-  //sendWhatsapp(263775231426,"hesi")
   app.listen(PORT, () => {
     console.log(`Listening on port ${PORT}!`);
   });
