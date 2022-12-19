@@ -1,9 +1,9 @@
 const axios = require("axios");
 const phoneID = process.env.WHATSAPP_PHONE_ID;
 const token = process.env.ALL_SPORT_PAGE_ACCESS_TOKEN;
-var todayDate = new Date().toISOString().slice(0, 10);
 
-const sendWhatsapp = async (number, message) => {
+
+const scoreUpdateWa = async (number, message) => {
   try {
     axios({
       method: "POST", // Required, HTTP method, a string, e.g. POST, GET
@@ -68,4 +68,4 @@ const sendWhatsapp = async (number, message) => {
   }
 };
 
-module.exports = sendWhatsapp;
+module.exports = scoreUpdateWa;

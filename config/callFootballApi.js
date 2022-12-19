@@ -5,15 +5,17 @@ var todayDate = new Date().toISOString().slice(0, 10);
 
 /* only queries fixutres and scores for current */
 
-const callFootballApi = async () => {
+const callFootballApi = async (league) => {
   console.log("call football");
   const options = {
     method: "GET",
     url: `https://api-football-v1.p.rapidapi.com/v3/fixtures`,
     params: {
-      league: "1",
+      league: league,
+     // current:true,
       season: "2022",
-      date: todayDate,
+      next:10,
+      
       timezone: "Africa/Harare",
     },
     headers: {
@@ -40,7 +42,7 @@ const callFootballApi = async () => {
       return `${matchStatus.long} *${winner} won ${winningScore}-${losingScore}*`;
     }
   };
-  const scoreFormatter = (score, matchStatus,home,away) => {
+  const scoreFormatter = (score, matchStatus, home, away) => {
     if (matchStatus == "Match Finished") {
       return `Full time ${score}`;
     } else if (matchStatus == "Not Started") {
@@ -52,6 +54,7 @@ const callFootballApi = async () => {
   const results = await axios
     .request(options)
     .then((response) => {
+      console.log(response.data.response)
       return response.data.response;
     })
     .catch(function (error) {
@@ -64,6 +67,7 @@ const callFootballApi = async () => {
         result.fixture.timestamp * 1000
       ).toLocaleTimeString();
       const fixtureID = result.fixture.id;
+      const leagueId=result.league.id
       const venue = result.fixture.venue.name;
       const home = result.teams.home.name;
       const away = result.teams.away.name;
@@ -71,6 +75,8 @@ const callFootballApi = async () => {
       const goals = result.goals;
       const winner = result.teams.home.winner ? home : away;
       const round = result.league.round;
+      const date=result.fixture.date.slice(0,10)
+      console.log(date)
       console.log(result.fixture.status);
       const matchStatus = matchStatusFormatter(
         result.fixture.status,
@@ -79,21 +85,23 @@ const callFootballApi = async () => {
       );
       const penalties = result.score.penalty;
       const scores = ` ${home} ${result.goals.home} vs ${result.goals.away} ${away}`;
-      const score = scoreFormatter(scores, matchStatus.long,home,away);
+      const score = scoreFormatter(scores, matchStatus.long, home, away);
 
       const fixture = new fixtureModel({
         matchStatus: matchStatus,
         fixture: `${home} vs ${away}`,
         venue: venue,
         round: round,
-        date: todayDate,
+        date: date,
         home: home,
         away: away,
         time: time,
+        leagueId:leagueId,
         score: score,
         fixtureID: fixtureID,
         competition: competition,
       });
+      console.log(score);
       //Save the api response to DB
       //check if the fixture is all int he DB and update otherwise create new fixture
       const queryAndSave = async function () {
@@ -108,7 +116,7 @@ const callFootballApi = async () => {
         } else {
           fixtureModel.findOneAndUpdate(
             { fixtureID: fixtureID },
-            { matchStatus: matchStatus, score: score, round: round },
+            { date:date, matchStatus: matchStatus, score: score, round: round,fixture:`${fixture.home} vs ${fixture.away}` },
             (error, data) => {
               if (error) {
                 console.log(error);
