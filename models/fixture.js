@@ -9,11 +9,19 @@ const fixtureSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  leagueId: {
+    type: String,
+    required: true,
+  },
   home: {
     type: String,
     required: true,
   },
   away: {
+    type: String,
+    required: true,
+  },
+  fixture: {
     type: String,
     required: true,
   },
@@ -46,4 +54,4 @@ const fixtureSchema = new mongoose.Schema({
 
 const fixtureModel = mongoose.model("fixture", fixtureSchema);
 
-module.exports=fixtureModel
+module.exports = fixtureModel;
