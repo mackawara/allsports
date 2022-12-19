@@ -5,6 +5,12 @@ const messageIdSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  time: {
+    type: String,
+    required: true,
+  },
+  
+
   messageId: {
     type: String,
     required: true,
