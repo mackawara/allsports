@@ -71,7 +71,7 @@ const incomingWaMsg = async (req, res) => {
           });
           number.optedIn = false;
           await number.save().then((data) => console.log(data));
-        } else if (msg_body.includes("league")) {
+        } else if (msg_body.match(/league/gi)) {
             console.log("league")
             const lastLetter=msg_body.length
             const league=msg_body.slice(8,lastLetter)
